@@ -42,25 +42,18 @@
   <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
     
     <a-assets>
-      <a-asset-item id="robot-model" src="robot.glb"></a-asset-item>
-      <a-asset-item id="monster-model" src="monster.glb"></a-asset-item>
+      <a-asset-item id="tts-model" src="assets/tts.glb"></a-asset-item>
+      <a-asset-item id="monster-model" src="assets/monster.glb"></a-asset-item>
       
       <!-- Add your audio files here -->
-      <audio id="robot-music" src="robot-theme.mp3" preload="auto" loop></audio>
-      <audio id="monster-music" src="monster-theme.mp3" preload="auto" loop></audio>
+      <audio id="tts-music" src="assets/tts-theme.mp3" preload="auto" loop></audio>
+      <audio id="monster-music" src="assets/monster-theme.mp3" preload="auto" loop></audio>
     </a-assets>
 
-    <!-- MARKER 1: Hiro Marker (Linked to robot music) -->
-    <a-marker type="pattern" preset="hiro" id="marker-robot" marker-handler="audioId: #robot-music">
-      
-      
-    </a-marker>
+    <!-- MARKER 1: Hiro Marker (Linked to tts music) -->
+    <a-marker type="pattern" preset="hiro" id="marker-tts" marker-handler="audioId: #tts-music"></a-marker>
 
-    <!-- MARKER 2: Kanji Marker (Linked to monster music) -->
-    <a-marker type="pattern" preset="kanji" id="marker-monster" marker-handler="audioId: #monster-music">
-      
-      
-    </a-marker>
+    <a-marker type="pattern" preset="kanji" id="marker-monster" marker-handler="audioId: #monster-music"></a-marker>
 
 
     
