@@ -44,60 +44,78 @@
     <a-assets>
       <a-asset-item id="robot-model" src="robot.glb"></a-asset-item>
       <a-asset-item id="monster-model" src="monster.glb"></a-asset-item>
+      
+      <!-- Add your audio files here -->
+      <audio id="robot-music" src="robot-theme.mp3" preload="auto" loop></audio>
+      <audio id="monster-music" src="monster-theme.mp3" preload="auto" loop></audio>
     </a-assets>
 
-    <!-- MARKER 1: Hiro Marker -->
-    <a-marker type="pattern" preset="hiro" id="marker-robot" marker-handler>
+    <!-- MARKER 1: Hiro Marker (Linked to robot music) -->
+    <a-marker type="pattern" preset="hiro" id="marker-robot" marker-handler="audioId: #robot-music">
       
       
     </a-marker>
 
-    <!-- MARKER 2: Kanji Marker -->
-    <a-marker type="pattern" preset="kanji" id="marker-monster" marker-handler>
+    <!-- MARKER 2: Kanji Marker (Linked to monster music) -->
+    <a-marker type="pattern" preset="kanji" id="marker-monster" marker-handler="audioId: #monster-music">
       
       
     </a-marker>
+
 
     
   </a-scene>
 
+
   <script>
-    // Global variable to track which model is currently scanned/visible
     let activeModelEl = null;
 
-    // A-Frame Component to track when a marker enters or leaves the camera view
     AFRAME.registerComponent('marker-handler', {
+      // Define a schema so you can pass different audio IDs to each marker
+      schema: {
+        audioId: { type: 'selector' }
+      },
+      
       init: function () {
         const marker = this.el;
-        // Find the 3D model nested inside this marker
         const modelEl = marker.querySelector('[gltf-model]');
+        const music = this.data.audioId; // Accesses the linked <audio> element
 
         marker.addEventListener('markerFound', () => {
           activeModelEl = modelEl; 
-          console.log("Active model set to:", modelEl.id);
+          
+          // Play the music tied to this marker
+          if (music) {
+            music.play().catch(error => {
+              console.log("Audio autoplay blocked. Ensure you interact with the screen first.", error);
+            });
+          }
         });
 
         marker.addEventListener('markerLost', () => {
           if (activeModelEl === modelEl) {
-            activeModelEl = null; // Clear if the active one is lost
+            activeModelEl = null;
+          }
+          
+          // Pause the music and reset its track timeline when tracking is lost
+          if (music) {
+            music.pause();
+            music.currentTime = 0; 
           }
         });
       }
     });
 
-    // Function triggered by the HTML button clicks
     function triggerAnimation(clipName) {
       if (activeModelEl) {
-        // Dynamically update the clip attribute of the animation-mixer
         activeModelEl.setAttribute('animation-mixer', {
           clip: clipName,
           loop: 'repeat'
         });
-        console.log(`Playing "${clipName}" on ${activeModelEl.id}`);
       } else {
         alert("Please scan an AR marker first!");
       }
     }
-  </script>
+  </script> 
 </body>
 </html>
