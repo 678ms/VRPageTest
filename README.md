@@ -1,4 +1,4 @@
-A WebVR Project using A-Frame and hosted in GitHub Pages.
+A WebAR Project using A-Frame and hosted in GitHub Pages.
 
 Pattern used : 
 
