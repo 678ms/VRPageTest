@@ -51,9 +51,13 @@
     </a-assets>
 
     <!-- MARKER 1: Hiro Marker (Linked to tts music) -->
-    <a-marker type="pattern" preset="hiro" id="marker-tts" marker-handler="audioId: #tts-music"></a-marker>
+    <a-marker type="pattern" preset="hiro" id="marker-tts" gltf-model="##tts-model" marker-handler="audioId: #tts-music">
+      <a-gltf-model id="magic-box" src="#tts-model" position="0 0 -3" scale="0.5 0.5 0.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear;" ></a-gltf-model>
+    </a-marker>
 
-    <a-marker type="pattern" preset="kanji" id="marker-monster" marker-handler="audioId: #monster-music"></a-marker>
+    <a-marker type="pattern" preset="kanji" id="marker-monster" marker-handler="audioId: #monster-music">
+
+    </a-marker>
 
 
     
@@ -72,7 +76,7 @@
       init: function () {
         const marker = this.el;
         const modelEl = marker.querySelector('[gltf-model]');
-        const music = this.data.audioId; // Accesses the linked <audio> element
+        const music = this.data.audioId;
 
         marker.addEventListener('markerFound', () => {
           activeModelEl = modelEl; 
