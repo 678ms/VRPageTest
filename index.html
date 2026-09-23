@@ -4,8 +4,7 @@
     <title>Multi-Marker AR Animation Controller</title>
     <script src="https://aframe.io/releases/1.8.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <script src="Command.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
   <style>
     .ui-container {
       position: absolute;
@@ -44,15 +43,14 @@
     <a-assets>
       <a-asset-item id="tts-model" src="assets/tts.glb"></a-asset-item>
       <a-asset-item id="monster-model" src="assets/monster.glb"></a-asset-item>
-      
-      <!-- Add your audio files here -->
+
       <audio id="tts-music" src="assets/tts-theme.mp3" preload="auto" loop></audio>
       <audio id="monster-music" src="assets/monster-theme.mp3" preload="auto" loop></audio>
     </a-assets>
 
     <!-- MARKER 1: Hiro Marker (Linked to tts music) -->
-    <a-marker type="pattern" preset="hiro" id="marker-tts" gltf-model="##tts-model" marker-handler="audioId: #tts-music">
-      <a-gltf-model id="magic-box" src="#tts-model" position="0 0 -3" scale="0.5 0.5 0.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear;" ></a-gltf-model>
+    <a-marker type="pattern" preset="hiro" id="marker-tts" marker-handler="audioId: #tts-music">
+      <a-entity id="tts" src="#tts-model" scale="0.5 0.5 0.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear;" ></a-gltf-model>
     </a-marker>
 
     <a-marker type="pattern" preset="kanji" id="marker-monster" marker-handler="audioId: #monster-music">
@@ -68,7 +66,6 @@
     let activeModelEl = null;
 
     AFRAME.registerComponent('marker-handler', {
-      // Define a schema so you can pass different audio IDs to each marker
       schema: {
         audioId: { type: 'selector' }
       },
@@ -80,8 +77,6 @@
 
         marker.addEventListener('markerFound', () => {
           activeModelEl = modelEl; 
-          
-          // Play the music tied to this marker
           if (music) {
             music.play().catch(error => {
               console.log("Audio autoplay blocked. Ensure you interact with the screen first.", error);
@@ -93,8 +88,6 @@
           if (activeModelEl === modelEl) {
             activeModelEl = null;
           }
-          
-          // Pause the music and reset its track timeline when tracking is lost
           if (music) {
             music.pause();
             music.currentTime = 0; 
