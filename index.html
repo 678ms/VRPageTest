@@ -1,45 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Multi-Marker AR Animation Controller</title>
-    <script src="https://aframe.io/releases/1.8.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
+  <title>Multi-Marker AR Animation Controller</title>
+  <script src="https://aframe.io/releases/1.8.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
   <style>
-    .ui-container {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9999;
-      display: flex;
-      gap: 10px;
-    }
-    .anim-btn {
-      padding: 12px 20px;
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
-      border: 2px solid #fff;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .anim-btn:hover { background: rgba(255, 255, 255, 0.9); color: black; }
+    body{margin:0;overflow:hidden}
+    .ui-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:none;gap:10px;pointer-events:auto}
+    .anim-btn{padding:12px 20px;background:rgba(0,0,0,.75);color:#fff;border:2px solid #fff;border-radius:8px;cursor:pointer;font-weight:bold;font-size:14px}
+    .anim-btn:hover{background:#fff;color:#000}
+    .marker-name{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;display:none;padding:8px 14px;background:rgba(0,0,0,.7);color:#fff;border-radius:6px;font-family:sans-serif;font-size:14px}
   </style>
 </head>
 
-<body style="margin: 0; overflow: hidden;">
+<body>
 
-  <!-- HTML UI Overlay -->
-  <div class="ui-container">
-    <button class="anim-btn" onclick="triggerAnimation('Idle')">Animation 1 (Idle)</button>
-    <button class="anim-btn" onclick="triggerAnimation('Walk')">Animation 2 (Walk)</button>
-    <button class="anim-btn" onclick="triggerAnimation('Jump')">Animation 3 (Jump)</button>
+  <div id="marker-name" class="marker-name"></div>
+
+  <div id="animation-controls" class="ui-container">
+    <div id="tts-controls" class="marker-controls">
+      <button class="anim-btn" onclick="triggerAnimation('Idle')">Idle</button>
+      <button class="anim-btn" onclick="triggerAnimation('Talk')">Talk</button>
+      <button class="anim-btn" onclick="triggerAnimation('Dance')">Dance</button>
+    </div>
+
+    <div id="monster-controls" class="marker-controls">
+      <button class="anim-btn" onclick="triggerAnimation('Idle')">Idle</button>
+      <button class="anim-btn" onclick="triggerAnimation('Attack')">Attack</button>
+      <button class="anim-btn" onclick="triggerAnimation('Roar')">Roar</button>
+    </div>
   </div>
 
-  <!-- AR Scene -->
   <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-    
     <a-assets>
       <a-asset-item id="tts-model" src="assets/tts.glb"></a-asset-item>
       <a-asset-item id="monster-model" src="assets/monster.glb"></a-asset-item>
@@ -48,63 +41,118 @@
       <audio id="monster-music" src="assets/monster-theme.mp3" preload="auto" loop></audio>
     </a-assets>
 
-    <!-- MARKER 1: Hiro Marker (Linked to tts music) -->
-    <a-marker type="pattern" preset="hiro" id="marker-tts" marker-handler="audioId: #tts-music">
-      <a-entity gltf-model="#tts-model" scale="0.5 0.5 0.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear;" ></a-entity>
+    <a-marker
+      type="pattern"
+      preset="hiro"
+      id="marker-tts"
+      marker-handler="audioId: #tts-music; controlsId: #tts-controls; name: TTS Character;">
+
+      <a-entity
+        id="tts-model-entity"
+        gltf-model="#tts-model"
+        scale="0.5 0.5 0.5"
+        animation-mixer="loop: once; clampWhenFinished: true;">
+      </a-entity>
     </a-marker>
 
-    <a-marker type="pattern" preset="kanji" id="marker-monster" marker-handler="audioId: #monster-music">
+    <a-marker
+      type="pattern"
+      preset="kanji"
+      id="marker-monster"
+      marker-handler="audioId: #monster-music; controlsId: #monster-controls; name: Monster;">
 
+      <a-entity
+        id="monster-model-entity"
+        gltf-model="#monster-model"
+        scale="0.5 0.5 0.5"
+        animation-mixer="loop: once; clampWhenFinished: true;">
+      </a-entity>
     </a-marker>
 
-
-    
+    <a-entity camera></a-entity>
   </a-scene>
 
-
   <script>
-    let activeModelEl = null;
-    AFRAME.registerComponent('marker-handler', {
-      schema: {
-        audioId: { type: 'selector' }
-      },
-      
-      init: function () {
-        const marker = this.el;
-        const modelEl = marker.querySelector('[gltf-model]');
-        const music = this.data.audioId;
+    let activeModelEl=null;
+    let activeMarkerEl=null;
+    let activeMusic=null;
+    let activeControls=null;
 
-        marker.addEventListener('markerFound', () => {
-          activeModelEl = modelEl; 
-          if (music) {
-            music.play().catch(error => {
-              console.log("Audio autoplay blocked. Ensure you interact with the screen first.", error);
+    const animationControls=document.getElementById('animation-controls');
+    const markerName=document.getElementById('marker-name');
+
+    function hideControls(){
+      animationControls.style.display='none';
+      document.querySelectorAll('.marker-controls').forEach(element=>{
+        element.style.display='none';
+      });
+      markerName.style.display='none';
+    }
+
+    function showControls(controlsElement,name){
+      hideControls();
+      animationControls.style.display='flex';
+      controlsElement.style.display='flex';
+      markerName.textContent=name;
+      markerName.style.display='block';
+      activeControls=controlsElement;
+    }
+
+    function triggerAnimation(animationName){
+      if(!activeModelEl)return;
+
+      activeModelEl.setAttribute(
+        'animation-mixer',
+        `clip: ${animationName}; loop: once; clampWhenFinished: true;`
+      );
+    }
+
+    AFRAME.registerComponent('marker-handler',{
+      schema:{
+        audioId:{type:'selector'},
+        controlsId:{type:'selector'},
+        name:{type:'string'}
+      },
+
+      init:function(){
+        const marker=this.el;
+        const modelEl=marker.querySelector('[gltf-model]');
+        const music=this.data.audioId;
+        const controls=this.data.controlsId;
+
+        marker.addEventListener('markerFound',()=>{
+          activeMarkerEl=marker;
+          activeModelEl=modelEl;
+          activeMusic=music;
+
+          if(controls){
+            showControls(controls,this.data.name);
+          }
+
+          if(music){
+            music.play().catch(error=>{
+              console.log('Audio autoplay blocked:',error);
             });
           }
         });
 
-        marker.addEventListener('markerLost', () => {
-          if (activeModelEl === modelEl) {
-            activeModelEl = null;
+        marker.addEventListener('markerLost',()=>{
+          if(activeMarkerEl===marker){
+            activeMarkerEl=null;
+            activeModelEl=null;
+            activeMusic=null;
+            activeControls=null;
+            hideControls();
           }
-          if (music) {
+
+          if(music){
             music.pause();
-            music.currentTime = 0; 
+            music.currentTime=0;
           }
         });
       }
     });
+  </script>
 
-    function triggerAnimation(clipName) {
-      if (activeModelEl) {
-        activeModelEl.setAttribute('animation-mixer', {
-          clip: clipName,
-          loop: 'repeat'
-        });
-      } else {
-        alert("Please scan an AR marker first!");
-      }
-    }
-  </script> 
 </body>
 </html>
