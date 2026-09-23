@@ -1,117 +1,103 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>AR Box - Change Spin Direction</title>
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+<head>
+  <title>Multi-Marker AR Animation Controller</title>
+  <script src="https://aframe.io"></script>
+  <script src="https://githack.com"></script>
+  <script src="https://jsdelivr.net"></script>
+
+  <style>
+    .ui-container {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      gap: 10px;
+    }
+    .anim-btn {
+      padding: 12px 20px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      border: 2px solid #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .anim-btn:hover { background: rgba(255, 255, 255, 0.9); color: black; }
+  </style>
+</head>
+
+<body style="margin: 0; overflow: hidden;">
+
+  <!-- HTML UI Overlay -->
+  <div class="ui-container">
+    <button class="anim-btn" onclick="triggerAnimation('Idle')">Animation 1 (Idle)</button>
+    <button class="anim-btn" onclick="triggerAnimation('Walk')">Animation 2 (Walk)</button>
+    <button class="anim-btn" onclick="triggerAnimation('Jump')">Animation 3 (Jump)</button>
+  </div>
+
+  <!-- AR Scene -->
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
     
-    <style>
-      body { margin: 0; overflow: hidden; font-family: sans-serif; }
+    <a-assets>
+      <a-asset-item id="robot-model" src="robot.glb"></a-asset-item>
+      <a-asset-item id="monster-model" src="monster.glb"></a-asset-item>
+    </a-assets>
+
+    <!-- MARKER 1: Hiro Marker -->
+    <a-marker type="pattern" preset="hiro" id="marker-robot" marker-handler>
       
-      /* Start Menu Styles */
-      #ar-menu {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background-color: #222; color: white;
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
-        z-index: 9999;
+      
+    </a-marker>
+
+    <!-- MARKER 2: Kanji Marker -->
+    <a-marker type="pattern" preset="kanji" id="marker-monster" marker-handler>
+      
+      
+    </a-marker>
+
+    
+  </a-scene>
+
+  <script>
+    // Global variable to track which model is currently scanned/visible
+    let activeModelEl = null;
+
+    // A-Frame Component to track when a marker enters or leaves the camera view
+    AFRAME.registerComponent('marker-handler', {
+      init: function () {
+        const marker = this.el;
+        // Find the 3D model nested inside this marker
+        const modelEl = marker.querySelector('[gltf-model]');
+
+        marker.addEventListener('markerFound', () => {
+          activeModelEl = modelEl; 
+          console.log("Active model set to:", modelEl.id);
+        });
+
+        marker.addEventListener('markerLost', () => {
+          if (activeModelEl === modelEl) {
+            activeModelEl = null; // Clear if the active one is lost
+          }
+        });
       }
-      
-      #start-btn {
-        padding: 15px 40px; font-size: 1.2rem; background-color: #4CC3D9;
-        color: #000; border: none; border-radius: 8px; cursor: pointer; margin-top: 20px; font-weight: bold;
+    });
+
+    // Function triggered by the HTML button clicks
+    function triggerAnimation(clipName) {
+      if (activeModelEl) {
+        // Dynamically update the clip attribute of the animation-mixer
+        activeModelEl.setAttribute('animation-mixer', {
+          clip: clipName,
+          loop: 'repeat'
+        });
+        console.log(`Playing "${clipName}" on ${activeModelEl.id}`);
+      } else {
+        alert("Please scan an AR marker first!");
       }
-      
-      /* Mobile UI for Rotation Controls */
-      #controls {
-        position: absolute; bottom: 30px; left: 0; width: 100%;
-        display: none; /* Hidden until Start is clicked */
-        justify-content: center; gap: 10px; z-index: 9999;
-        padding: 0 15px; 
-        box-sizing: border-box; 
-      }
-      
-      .control-btn {
-        flex: 1; 
-        max-width: 160px; 
-        padding: 12px 0; font-size: 1rem; background-color: white; color: #333;
-        border: 2px solid #333; border-radius: 8px; cursor: pointer; font-weight: bold;
-      }
-      
-      .control-btn:active { background-color: #ddd; }
-    </style>
-  </head>
-  
-  <body>
-
-    <!-- 1. The Start Menu -->
-    <div id="ar-menu">
-      <h1>AR APP</h1>
-      <button id="start-btn">Start</button>
-    </div>
-
-    <!-- 2. The Rotation Controls -->
-    <div id="controls">
-      <button class="control-btn" id="btn-left">Spin Left</button>
-      <button class="control-btn" id="btn-right">Spin Right</button>
-    </div>
-
-    <!-- 3. The AR Scene -->
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
-      
-      <!-- The box handles both visibility and its own animation -->
-      <a-box 
-        id="magic-box"
-        visible="false"
-        position="0 0.5 -3" 
-        color="#4CC3D9" 
-        animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear;">
-      </a-box>
-
-      <a-entity camera></a-entity>
-    </a-scene>
-
-    <!-- 4. The Logic -->
-    <script>
-      const menu = document.getElementById('ar-menu');
-      const startBtn = document.getElementById('start-btn');
-      const controls = document.getElementById('controls');
-      const box = document.getElementById('magic-box');
-      
-      const btnLeft = document.getElementById('btn-left');
-      const btnRight = document.getElementById('btn-right');
-      
-      let isAppActive = false;
-
-      // Handle the Start button click
-      startBtn.addEventListener('click', () => {
-        menu.style.display = 'none';
-        controls.style.display = 'flex'; 
-        
-        setTimeout(() => {
-          isAppActive = true;
-        }, 100);
-      });
-
-      // Handle screen tap to show/hide the box
-      window.addEventListener('click', () => {
-        if (isAppActive) {
-          const isVisible = box.getAttribute('visible');
-          box.setAttribute('visible', !isVisible);
-        }
-      });
-
-      // Change animation to spin Counter-Clockwise (Left)
-      btnLeft.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevents the screen tap from triggering visibility toggle
-        box.setAttribute('animation', 'property: rotation; to: 0 -360 0; loop: true; dur: 3000; easing: linear;');
-      });
-
-      // Change animation to spin Clockwise (Right)
-      btnRight.addEventListener('click', (e) => {
-        e.stopPropagation();
-        box.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear;');
-      });
-    </script>
-  </body>
+    }
+  </script>
+</body>
 </html>
