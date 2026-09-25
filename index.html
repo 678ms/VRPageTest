@@ -6,6 +6,67 @@
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
   <style>
+     #start-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: url('brainr.jpg') no-repeat center center/cover;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .menu-card {
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      padding: 30px 40px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      max-width: 420px;
+      width: 90%;
+    }
+
+    .menu-card h1 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 26px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .menu-card p {
+      margin-bottom: 25px;
+      color: #e0e0e0;
+      line-height: 1.5;
+      font-size: 15px;
+    }
+
+    .start-btn {
+      padding: 14px 36px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .start-btn:hover {
+      background: #0056b3;
+      transform: scale(1.05);
+    }
     body{margin:0;overflow:hidden}
     .ui-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:none;gap:10px;pointer-events:auto}
     .anim-btn{padding:12px 20px;background:rgba(0,0,0,.75);color:#fff;border:2px solid #fff;border-radius:8px;cursor:pointer;font-weight:bold;font-size:14px}
@@ -15,6 +76,14 @@
 </head>
 
 <body>
+   <div id="start-menu">
+    <div class="menu-card">
+      <h1>Multi-Marker WebAR</h1>
+      <p>Arahkan kamera Anda ke marker <b>Hiro</b> atau <b>Kanji</b> setelah menekan tombol di bawah untuk melihat animasi 3D.</p>
+      <button class="start-btn" onclick="startExperience()">Start AR</button>
+    </div>
+  </div>
+  
   <div id="marker-name" class="marker-name"></div>
 
   <div id="animation-controls" class="ui-container">
