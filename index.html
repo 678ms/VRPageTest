@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Multi-Marker AR Animation Controller (Persistent Models)</title>
   
   <!-- A-Frame and AR.js Libraries -->
@@ -17,33 +17,56 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* Custom reset and AR layout overrides */
-    body {
+    /* Reset layout to full mobile viewport height/width and prevent dynamic browser address bar scroll/bounce */
+    html, body {
       margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
       overflow: hidden;
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      position: fixed;
+      top: 0;
+      left: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       user-select: none;
       -webkit-user-select: none;
-      background-color: #090d16;
+      touch-action: none;
+      background-color: #000000;
+    }
+
+    /* Force AR.js video and A-Frame Canvas to perfectly fit mobile screen without stretching or overflow bars */
+    video, .arjs-video, a-scene, canvas.a-canvas {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+      max-height: none !important;
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      object-fit: cover !important;
     }
 
     /* Glassmorphism styling for floating HUD components */
     .glass-panel {
-      background: rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
     }
 
     .anim-btn {
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
+      touch-action: manipulation;
     }
 
     .anim-btn:active {
-      transform: scale(0.95);
+      transform: scale(0.92);
     }
 
     .anim-btn::after {
@@ -62,85 +85,94 @@
       transition: transform 0.6s;
     }
 
-    /* Joystick Zone Styling */
+    /* Joystick Zone Styling with iPhone Notch/Safe Area handling */
     #joystick-zone {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      width: 120px;
-      height: 120px;
+      bottom: calc(20px + env(safe-area-inset-bottom));
+      right: calc(20px + env(safe-area-inset-right));
+      width: 110px;
+      height: 110px;
       z-index: 9999;
       display: none;
       pointer-events: auto;
       touch-action: none;
     }
 
-    /* Video element transition */
+    /* Video opacity transition to prevent camera white flashes */
     .arjs-video {
       opacity: 0;
-      transition: opacity 0.5s ease-in-out;
+      transition: opacity 0.4s ease-in-out;
     }
 
     .ar-active .arjs-video {
       opacity: 1;
+    }
+
+    /* Responsive adjustments for top and bottom floating UI elements */
+    #hud-top {
+      top: calc(16px + env(safe-area-inset-top));
+    }
+
+    #animation-controls {
+      bottom: calc(20px + env(safe-area-inset-bottom));
     }
   </style>
 </head>
 
 <body>
   <!-- Start Menu / Splash Overlay -->
-  <div id="start-menu" class="fixed inset-0 z-[10000] flex flex-col items-center justify-center p-6 bg-slate-950 text-white transition-opacity duration-500">
+  <div id="start-menu" class="fixed inset-0 z-[10000] flex flex-col items-center justify-center p-4 bg-slate-950/95 text-white transition-opacity duration-500 overflow-y-auto">
     <div class="absolute w-72 h-72 bg-cyan-500/20 rounded-full blur-3xl -top-10 -left-10 pointer-events-none"></div>
     <div class="absolute w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl -bottom-10 -right-10 pointer-events-none"></div>
 
-    <div class="relative max-w-md w-full glass-panel p-8 rounded-2xl flex flex-col items-center text-center space-y-6 border border-slate-700/50 shadow-2xl">
-      <div class="w-20 h-20 bg-gradient-to-tr from-cyan-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div class="relative max-w-sm w-full glass-panel p-6 sm:p-8 rounded-3xl flex flex-col items-center text-center space-y-5 border border-slate-700/50 shadow-2xl my-auto">
+      <div class="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-tr from-cyan-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
         </svg>
       </div>
 
       <div>
-        <h1 class="text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-300">
+        <h1 class="text-xl sm:text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-300">
           AR ANIMATION LAB
         </h1>
-        <p class="text-xs text-slate-400 uppercase tracking-widest mt-1">Multi-Marker Persistent AR</p>
+        <p class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-widest mt-1">Multi-Marker Persistent AR</p>
       </div>
 
-      <p class="text-sm text-slate-300 leading-relaxed">
-        Scan target markers (<span class="text-cyan-400 font-mono font-semibold">Hiro</span> or <span class="text-indigo-400 font-mono font-semibold">Kanji</span>) once to spawn and lock 3D models into AR space. Models remain pinned even after the marker leaves camera view!
+      <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+        Scan target markers (<span class="text-cyan-400 font-mono font-semibold">Hiro</span> or <span class="text-indigo-400 font-mono font-semibold">Kanji</span>) once to spawn 3D models into AR space. Models stay locked in view even after moving away!
       </p>
 
-      <div class="w-full grid grid-cols-2 gap-3 text-xs text-slate-300 pt-2">
-        <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-700/50 flex flex-col items-center">
-          <svg class="w-5 h-5 mb-1 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div class="w-full grid grid-cols-2 gap-2 text-[11px] text-slate-300 pt-1">
+        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/50 flex flex-col items-center text-center">
+          <svg class="w-4 h-4 mb-1 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 00-2 2z" />
           </svg>
-          <span>Camera Access Required</span>
+          <span>Camera Permission</span>
         </div>
-        <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-700/50 flex flex-col items-center">
-          <svg class="w-5 h-5 mb-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/50 flex flex-col items-center text-center">
+          <svg class="w-4 h-4 mb-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
-          <span>Auto-Lock Persistence</span>
+          <span>Persistent AR Lock</span>
         </div>
       </div>
 
-      <button id="start-btn" onclick="startApp()" class="w-full py-3.5 px-6 rounded-xl font-bold text-sm tracking-wider uppercase bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 active:scale-95 transition duration-200">
+      <button id="start-btn" onclick="startApp()" class="w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm tracking-wider uppercase bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 active:scale-95 transition duration-200">
         Start Experience
       </button>
     </div>
   </div>
 
   <!-- Top Marker Status HUD -->
-  <div id="hud-top" class="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] hidden flex-col items-center space-y-2 pointer-events-auto">
-    <div id="marker-name" class="px-5 py-2 glass-panel rounded-full text-white font-semibold text-xs tracking-wider uppercase shadow-xl border border-cyan-500/30 flex items-center gap-2">
+  <div id="hud-top" class="fixed left-1/2 -translate-x-1/2 z-[9999] hidden flex-col items-center space-y-2 pointer-events-auto w-auto max-w-[90vw]">
+    <div id="marker-name" class="px-4 py-1.5 glass-panel rounded-full text-white font-semibold text-[11px] sm:text-xs tracking-wider uppercase shadow-xl border border-cyan-500/30 flex items-center gap-2">
       <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
       <span id="marker-title-text">Model Active</span>
     </div>
     
     <!-- Rescan / Unlock Button -->
-    <button onclick="repositionCurrentModel()" class="px-3 py-1.5 glass-panel rounded-lg text-xs font-medium text-slate-200 hover:text-white border border-slate-600/50 hover:border-cyan-400/60 shadow transition-all active:scale-95 flex items-center gap-1.5">
+    <button onclick="repositionCurrentModel()" class="px-3 py-1.5 glass-panel rounded-lg text-[11px] font-medium text-slate-200 hover:text-white border border-slate-600/50 hover:border-cyan-400/60 shadow transition-all active:scale-95 flex items-center gap-1.5">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
       </svg>
@@ -149,25 +181,25 @@
   </div>
 
   <!-- Animation Controls HUD -->
-  <div id="animation-controls" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] hidden flex-col items-center pointer-events-auto">
-    <div id="tts-controls" class="marker-controls flex gap-2 glass-panel p-2 rounded-2xl border border-cyan-500/20">
-      <button class="anim-btn px-4 py-2 bg-slate-800/80 hover:bg-cyan-600 text-white font-semibold text-xs rounded-xl border border-slate-600 hover:border-cyan-400 shadow" onclick="triggerAnimation('Running')">Idle</button>
-      <button class="anim-btn px-4 py-2 bg-slate-800/80 hover:bg-cyan-600 text-white font-semibold text-xs rounded-xl border border-slate-600 hover:border-cyan-400 shadow" onclick="triggerAnimation('All_Night_Dance')">Walk</button>
-      <button class="anim-btn px-4 py-2 bg-slate-800/80 hover:bg-cyan-600 text-white font-semibold text-xs rounded-xl border border-slate-600 hover:border-cyan-400 shadow" onclick="triggerAnimation('Boom_Dance')">Dance</button>
+  <div id="animation-controls" class="fixed left-1/2 -translate-x-1/2 z-[9999] hidden flex-col items-center pointer-events-auto max-w-[90vw]">
+    <div id="tts-controls" class="marker-controls flex gap-1.5 sm:gap-2 glass-panel p-1.5 sm:p-2 rounded-2xl border border-cyan-500/20">
+      <button class="anim-btn px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-800/80 hover:bg-cyan-600 text-white font-semibold text-[11px] sm:text-xs rounded-xl border border-slate-600 hover:border-cyan-400 shadow" onclick="triggerAnimation('Running')">Idle</button>
+      <button class="anim-btn px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-800/80 hover:bg-cyan-600 text-white font-semibold text-[11px] sm:text-xs rounded-xl border border-slate-600 hover:border-cyan-400 shadow" onclick="triggerAnimation('All_Night_Dance')">Walk</button>
+      <button class="anim-btn px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-800/80 hover:bg-cyan-600 text-white font-semibold text-[11px] sm:text-xs rounded-xl border border-slate-600 hover:border-cyan-400 shadow" onclick="triggerAnimation('Boom_Dance')">Dance</button>
     </div>
 
-    <div id="freddy-controls" class="marker-controls flex gap-2 glass-panel p-2 rounded-2xl border border-indigo-500/20">
-      <button class="anim-btn px-4 py-2 bg-slate-800/80 hover:bg-indigo-600 text-white font-semibold text-xs rounded-xl border border-slate-600 hover:border-indigo-400 shadow" onclick="triggerAnimation('Freddy_Golden--Idle')">Idle</button>
-      <button class="anim-btn px-4 py-2 bg-slate-800/80 hover:bg-indigo-600 text-white font-semibold text-xs rounded-xl border border-slate-600 hover:border-indigo-400 shadow" onclick="triggerAnimation('Freddy_Golden--Charge')">Walk</button>
-      <button class="anim-btn px-4 py-2 bg-slate-800/80 hover:bg-indigo-600 text-white font-semibold text-xs rounded-xl border border-slate-600 hover:border-indigo-400 shadow" onclick="triggerAnimation('Freddy_Golden--Jumpscare_Tuned')">Head</button>
+    <div id="freddy-controls" class="marker-controls flex gap-1.5 sm:gap-2 glass-panel p-1.5 sm:p-2 rounded-2xl border border-indigo-500/20">
+      <button class="anim-btn px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-800/80 hover:bg-indigo-600 text-white font-semibold text-xs rounded-xl border border-slate-600 hover:border-indigo-400 shadow" onclick="triggerAnimation('Freddy_Golden--Idle')">Idle</button>
+      <button class="anim-btn px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-800/80 hover:bg-indigo-600 text-white font-semibold text-xs rounded-xl border border-slate-600 hover:border-indigo-400 shadow" onclick="triggerAnimation('Freddy_Golden--Charge')">Walk</button>
+      <button class="anim-btn px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-800/80 hover:bg-indigo-600 text-white font-semibold text-xs rounded-xl border border-slate-600 hover:border-indigo-400 shadow" onclick="triggerAnimation('Freddy_Golden--Jumpscare_Tuned')">Head</button>
     </div>
   </div>
 
   <!-- Joystick Container -->
   <div id="joystick-zone"></div>
 
-  <!-- A-Frame AR Scene -->
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" class="w-full h-full">
+  <!-- A-Frame AR Scene configured for mobile browsers -->
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;" class="w-full h-full">
     <a-assets>
       <a-asset-item id="tts-model" src="assets/tts.glb"></a-asset-item>
       <a-asset-item id="freddy-model" src="assets/freddy.glb"></a-asset-item>
@@ -232,6 +264,30 @@
     const markerTitleText = document.getElementById('marker-title-text');
     const joystickZone = document.getElementById('joystick-zone');
 
+    // Force camera & video resize fit for mobile browsers
+    function forceMobileVideoResize() {
+      const video = document.querySelector('.arjs-video');
+      if (video) {
+        video.style.width = '100% ';
+        video.style.height = '100%';
+        video.style.objectFit = 'cover';
+        video.style.position = 'absolute';
+        video.style.top = '0px';
+        video.style.left = '0px';
+      }
+      
+      const scene = document.querySelector('a-scene');
+      if (scene && scene.resize) {
+        scene.resize();
+      }
+    }
+
+    // Attach resize listeners for viewport or orientation changes
+    window.addEventListener('resize', forceMobileVideoResize);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(forceMobileVideoResize, 300);
+    });
+
     function startApp() {
       if (appStarted) return;
       appStarted = true;
@@ -247,10 +303,12 @@
       }
 
       document.body.classList.add('ar-active');
+      forceMobileVideoResize();
 
       startMenu.style.opacity = '0';
       setTimeout(() => {
         startMenu.style.display = 'none';
+        forceMobileVideoResize();
       }, 500);
     }
 
@@ -283,7 +341,7 @@
         mode: 'static',
         position: { left: '50%', top: '50%' },
         color: '#38bdf8',
-        size: 100
+        size: 90
       });
 
       joystickManager.on('move', (evt, data) => {
@@ -337,7 +395,6 @@
       currentMarkerHandler.resetLock();
     }
 
-    // Register marker detection component with World Space Model Pinning
     AFRAME.registerComponent('marker-handler', {
       schema: {
         audioId: { type: 'selector' },
@@ -361,12 +418,8 @@
 
           // Perform initial lock/pinning when detected for the first time
           if (!this.isLocked && modelEl) {
-            // Read matrix world of model when marker is tracked
             modelEl.object3D.updateMatrixWorld(true);
-            
-            // Re-parent model from marker to scene root container so standard AR.js hiding logic doesn't hide it
             worldContainer.object3D.attach(modelEl.object3D);
-
             this.isLocked = true;
           }
 
@@ -389,7 +442,6 @@
         this.resetLock = function () {
           if (!modelEl) return;
 
-          // Re-attach model back to original marker element and reset transform
           this.originalParent.object3D.attach(modelEl.object3D);
           modelEl.setAttribute('position', '0 0 0');
           modelEl.setAttribute('rotation', '0 0 0');
@@ -409,6 +461,11 @@
           }
         };
       }
+    });
+
+    // Ensure camera and layout fits on DOM content loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(forceMobileVideoResize, 1000);
     });
   </script>
 </body>
