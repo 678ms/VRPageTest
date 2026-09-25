@@ -8,9 +8,7 @@
   <script src="https://aframe.io/releases/1.8.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
-  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
-
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
@@ -399,7 +397,7 @@
     }
 
     function showSummonPrompt(handler) {
-      if (pendingMarkerHandler || (currentMarkerHandler && currentMarkerHandler.isLocked)) return;
+      if (pendingMarkerHandler || (currentMarkerHandler && currentMarkerHandler.isLocked && currentMarkerHandler === handler)) return;
       pendingMarkerHandler = handler;
       summonCharacterName.textContent = handler.data.name;
       summonModal.style.display = 'flex';
@@ -408,6 +406,9 @@
     function confirmSummon() {
       summonModal.style.display = 'none';
       if (pendingMarkerHandler) {
+        if (currentMarkerHandler && currentMarkerHandler !== pendingMarkerHandler) {
+          currentMarkerHandler.resetLock();
+        }
         pendingMarkerHandler.spawnModel();
         pendingMarkerHandler = null;
       }
@@ -447,9 +448,7 @@
 
         marker.addEventListener('markerFound', () => {
           if (!appStarted) return;
-
           if (this.isLocked) return;
-
           if (this.declined) return;
 
           showSummonPrompt(this);
@@ -478,9 +477,7 @@
           }
 
           if (music) {
-            music.play().catch(error => {
-              console.log('Audio playback blocked:', error);
-            });
+            music.play().catch(() => {});
           }
         };
 
