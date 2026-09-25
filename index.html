@@ -6,7 +6,9 @@
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
   <style>
-     #start-menu {
+    body { margin: 0; overflow: hidden; font-family: sans-serif; }
+    
+    #start-menu {
       position: fixed;
       top: 0;
       left: 0;
@@ -67,23 +69,25 @@
       background: #0056b3;
       transform: scale(1.05);
     }
-    body{margin:0;overflow:hidden}
-    .ui-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:none;gap:10px;pointer-events:auto}
-    .anim-btn{padding:12px 20px;background:rgba(0,0,0,.75);color:#fff;border:2px solid #fff;border-radius:8px;cursor:pointer;font-weight:bold;font-size:14px}
-    .anim-btn:hover{background:#fff;color:#000}
-    .marker-name{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;display:none;padding:8px 14px;background:rgba(0,0,0,.7);color:#fff;border-radius:6px;font-family:sans-serif;font-size:14px}
+
+    /* UI AR Controls */
+    .ui-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: none; gap: 10px; pointer-events: auto; }
+    .anim-btn { padding: 12px 20px; background: rgba(0,0,0,.75); color: #fff; border: 2px solid #fff; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+    .anim-btn:hover { background: #fff; color: #000; }
+    .marker-name { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; display: none; padding: 8px 14px; background: rgba(0,0,0,.7); color: #fff; border-radius: 6px; font-size: 14px; }
   </style>
 </head>
 
 <body>
-   <div id="start-menu">
+
+  <div id="start-menu">
     <div class="menu-card">
       <h1>Multi-Marker WebAR</h1>
       <p>Arahkan kamera Anda ke marker <b>Hiro</b> atau <b>Kanji</b> setelah menekan tombol di bawah untuk melihat animasi 3D.</p>
       <button class="start-btn" onclick="startExperience()">Start AR</button>
     </div>
   </div>
-  
+
   <div id="marker-name" class="marker-name"></div>
 
   <div id="animation-controls" class="ui-container">
@@ -136,85 +140,98 @@
         animation-mixer="loop: repeat;">
       </a-entity>
     </a-marker>
+
     <a-entity camera></a-entity>
   </a-scene>
 
   <script>
-    let activeModelEl=null;
-    let activeMarkerEl=null;
-    let activeMusic=null;
-    let activeControls=null;
+    let activeModelEl = null;
+    let activeMarkerEl = null;
+    let activeMusic = null;
+    let activeControls = null;
 
-    const animationControls=document.getElementById('animation-controls');
-    const markerName=document.getElementById('marker-name');
+    const animationControls = document.getElementById('animation-controls');
+    const markerName = document.getElementById('marker-name');
 
-    function hideControls(){
-      animationControls.style.display='none';
-      document.querySelectorAll('.marker-controls').forEach(element=>{
-        element.style.display='none';
+    function startExperience() {
+      document.getElementById('start-menu').style.display = 'none';
+
+      const audioElements = document.querySelectorAll('audio');
+      audioElements.forEach(audio => {
+        audio.play().then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        }).catch(() => {});
       });
-      markerName.style.display='none';
     }
 
-    function showControls(controlsElement,name){
+    function hideControls() {
+      animationControls.style.display = 'none';
+      document.querySelectorAll('.marker-controls').forEach(element => {
+        element.style.display = 'none';
+      });
+      markerName.style.display = 'none';
+    }
+
+    function showControls(controlsElement, name) {
       hideControls();
-      animationControls.style.display='flex';
-      controlsElement.style.display='flex';
-      markerName.textContent=name;
-      markerName.style.display='block';
-      activeControls=controlsElement;
+      animationControls.style.display = 'flex';
+      controlsElement.style.display = 'flex';
+      markerName.textContent = name;
+      markerName.style.display = 'block';
+      activeControls = controlsElement;
     }
 
-    function triggerAnimation(animationName){
-      if(!activeModelEl)return;
+    function triggerAnimation(animationName) {
+      if (!activeModelEl) return;
 
       activeModelEl.setAttribute(
         'animation-mixer',
-        `clip: ${animationName}; loop: repeat; clampWhenFinished: true;`
+        clip: ${animationName}; loop: repeat; clampWhenFinished: true;
       );
     }
 
-    AFRAME.registerComponent('marker-handler',{
-      schema:{
-        audioId:{type:'selector'},
-        controlsId:{type:'selector'},
-        name:{type:'string'}
+    AFRAME.registerComponent('marker-handler', {
+      schema: {
+        audioId: { type: 'selector' },
+        controlsId: { type: 'selector' },
+        name: { type: 'string' }
       },
 
-      init:function(){
-        const marker=this.el;
-        const modelEl=marker.querySelector('[gltf-model]');
-        const music=this.data.audioId;
-        const controls=this.data.controlsId;
+      init: function () {
+        const marker = this.el;
+        const modelEl = marker.querySelector('[gltf-model]');
+        const music = this.data.audioId;
+        const controls = this.data.controlsId;
 
-        marker.addEventListener('markerFound',()=>{
-          activeMarkerEl=marker;
-          activeModelEl=modelEl;
-          activeMusic=music;
+        marker.addEventListener('markerFound', () => {
+          activeMarkerEl = marker;
+          activeModelEl = modelEl;
+          activeMusic = music;
 
-          if(controls){
-            showControls(controls,this.data.name);
+          if (controls) {
+            showControls(controls, this.data.name);
           }
 
-          if(music){
-            music.play().catch(error=>{
-              console.log('Audio autoplay blocked:',error);
+          if (music) {
+            music.play().catch(error => {
+              console.log('Audio play error:', error);
             });
           }
         });
 
-        marker.addEventListener('markerLost',()=>{
-          if(activeMarkerEl===marker){
-            activeMarkerEl=null;
-            activeModelEl=null;
-            activeMusic=null;
-            activeControls=null;
+        marker.addEventListener('markerLost', () => {
+          if (activeMarkerEl === marker) {
+            activeMarkerEl = null;
+            activeModelEl = null;
+            activeMusic = null;
+            activeControls = null;
             hideControls();
           }
 
-          if(music){
+          if (music) {
             music.pause();
-            music.currentTime=0;
+            music.currentTime = 0;
           }
         });
       }
