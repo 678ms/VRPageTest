@@ -1,14 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Multi-Marker AR Animation Controller</title>
+
   <script src="https://aframe.io/releases/1.8.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
+
   <style>
-    body { margin: 0; overflow: hidden; font-family: sans-serif; }
-    
-    /* Overlay Start Menu */
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+
     #start-menu {
       position: fixed;
       top: 0;
@@ -57,54 +65,161 @@
       transform: scale(1.05);
     }
 
-    /* UI AR Controls */
-    .ui-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: none; gap: 10px; pointer-events: auto; }
-    .anim-btn { padding: 12px 20px; background: rgba(0,0,0,.75); color: #fff; border: 2px solid #fff; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
-    .anim-btn:hover { background: #fff; color: #000; }
-    .marker-name { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; display: none; padding: 8px 14px; background: rgba(0,0,0,.7); color: #fff; border-radius: 6px; font-size: 14px; }
+    .ui-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: none;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    .marker-controls {
+      display: none;
+      gap: 10px;
+    }
+
+    .anim-btn {
+      padding: 12px 20px;
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      border: 2px solid #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .anim-btn:hover {
+      background: #fff;
+      color: #000;
+    }
+
+    .marker-name {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: none;
+      padding: 8px 14px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      border-radius: 6px;
+      font-size: 14px;
+    }
   </style>
 </head>
 
 <body>
 
-  <!-- Menu Awal -->
   <div id="start-menu">
     <h1>Multi-Marker WebAR</h1>
-    <p>Arahkan kamera Anda ke marker <b>Hiro</b> atau <b>Kanji</b> setelah menekan tombol di bawah untuk melihat animasi 3D.</p>
-    <button class="start-btn" onclick="startExperience()">Start AR</button>
+
+    <p>
+      Arahkan kamera Anda ke marker
+      <b>Hiro</b> atau <b>Kanji</b>
+      setelah menekan tombol di bawah
+      untuk melihat animasi 3D.
+    </p>
+
+    <button
+      id="start-button"
+      class="start-btn"
+      onclick="startExperience()">
+      Start AR
+    </button>
   </div>
 
-  <!-- UI AR -->
   <div id="marker-name" class="marker-name"></div>
 
   <div id="animation-controls" class="ui-container">
+
     <div id="tts-controls" class="marker-controls">
-      <button class="anim-btn" onclick="triggerAnimation('Running')">Idle</button>
-      <button class="anim-btn" onclick="triggerAnimation('All_Night_Dance')">Walk</button>
-      <button class="anim-btn" onclick="triggerAnimation('Boom_Dance')">Dance</button>
+      <button
+        class="anim-btn"
+        onclick="triggerAnimation('Running')">
+        Idle
+      </button>
+
+      <button
+        class="anim-btn"
+        onclick="triggerAnimation('All_Night_Dance')">
+        Walk
+      </button>
+
+      <button
+        class="anim-btn"
+        onclick="triggerAnimation('Boom_Dance')">
+        Dance
+      </button>
     </div>
 
     <div id="freddy-controls" class="marker-controls">
-      <button class="anim-btn" onclick="triggerAnimation('Freddy_Golden--Idle')">Idle</button>
-      <button class="anim-btn" onclick="triggerAnimation('Freddy_Golden--Charge')">Walk</button>
-      <button class="anim-btn" onclick="triggerAnimation('Freddy_Golden--Jumpscare_Tuned')">Head</button>
+      <button
+        class="anim-btn"
+        onclick="triggerAnimation('Freddy_Golden--Idle')">
+        Idle
+      </button>
+
+      <button
+        class="anim-btn"
+        onclick="triggerAnimation('Freddy_Golden--Charge')">
+        Walk
+      </button>
+
+      <button
+        class="anim-btn"
+        onclick="triggerAnimation('Freddy_Golden--Jumpscare_Tuned')">
+        Head
+      </button>
     </div>
+
   </div>
 
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-    <a-assets>
-      <a-asset-item id="tts-model" src="assets/tts.glb"></a-asset-item>
-      <a-asset-item id="freddy-model" src="assets/freddy.glb"></a-asset-item>
+  <a-scene
+    embedded
+    arjs="sourceType: webcam; debugUIEnabled: false;">
 
-      <audio id="tts-music" src="assets/tts-theme.mp3" preload="auto" loop></audio>
-      <audio id="freddy-music" src="assets/freddy-theme.mp3" preload="auto" loop></audio>
+    <a-assets>
+
+      <a-asset-item
+        id="tts-model"
+        src="assets/tts.glb">
+      </a-asset-item>
+
+      <a-asset-item
+        id="freddy-model"
+        src="assets/freddy.glb">
+      </a-asset-item>
+
+      <audio
+        id="tts-music"
+        src="assets/tts-theme.mp3"
+        preload="auto"
+        loop>
+      </audio>
+
+      <audio
+        id="freddy-music"
+        src="assets/freddy-theme.mp3"
+        preload="auto"
+        loop>
+      </audio>
+
     </a-assets>
 
     <a-marker
       type="pattern"
       preset="hiro"
       id="marker-tts"
-      marker-handler="audioId: #tts-music; controlsId: #tts-controls; name: The Tung;">
+      marker-handler="
+        audioId: #tts-music;
+        controlsId: #tts-controls;
+        name: The Tung;
+      ">
 
       <a-entity
         id="tts-model-entity"
@@ -112,13 +227,18 @@
         scale="0.5 0.5 0.5"
         animation-mixer="loop: repeat;">
       </a-entity>
+
     </a-marker>
 
     <a-marker
       type="pattern"
       preset="kanji"
       id="marker-freddy"
-      marker-handler="audioId: #freddy-music; controlsId: #freddy-controls; name: Freddy;">
+      marker-handler="
+        audioId: #freddy-music;
+        controlsId: #freddy-controls;
+        name: Freddy;
+      ">
 
       <a-entity
         id="freddy-model-entity"
@@ -126,9 +246,11 @@
         scale="0.5 0.5 0.5"
         animation-mixer="loop: repeat;">
       </a-entity>
+
     </a-marker>
 
     <a-entity camera></a-entity>
+
   </a-scene>
 
   <script>
@@ -137,43 +259,62 @@
     let activeMusic = null;
     let activeControls = null;
 
-    const animationControls = document.getElementById('animation-controls');
-    const markerName = document.getElementById('marker-name');
+    const animationControls =
+      document.getElementById('animation-controls');
 
-    // Fungsi untuk memulai WebAR dari menu
+    const markerName =
+      document.getElementById('marker-name');
+
+    const startMenu =
+      document.getElementById('start-menu');
+
     function startExperience() {
-      // Sembunyikan menu start
-      document.getElementById('start-menu').style.display = 'none';
+      startMenu.style.display = 'none';
 
-      // Resume AudioContext untuk mengaktifkan izin audio pada browser modern (Chrome/Safari)
-      const audioElements = document.querySelectorAll('audio');
-      audioElements.forEach(audio => {
-        audio.play().then(() => {
-          audio.pause();
-          audio.currentTime = 0;
-        }).catch(() => {});
+      hideControls();
+
+      const audioElements =
+        document.querySelectorAll('audio');
+
+      audioElements.forEach(function(audio) {
+        audio.play()
+          .then(function() {
+            audio.pause();
+            audio.currentTime = 0;
+          })
+          .catch(function() {});
       });
     }
 
     function hideControls() {
       animationControls.style.display = 'none';
-      document.querySelectorAll('.marker-controls').forEach(element => {
-        element.style.display = 'none';
-      });
+
+      document
+        .querySelectorAll('.marker-controls')
+        .forEach(function(element) {
+          element.style.display = 'none';
+        });
+
       markerName.style.display = 'none';
     }
 
     function showControls(controlsElement, name) {
       hideControls();
+
       animationControls.style.display = 'flex';
+
       controlsElement.style.display = 'flex';
+
       markerName.textContent = name;
       markerName.style.display = 'block';
+
       activeControls = controlsElement;
     }
 
     function triggerAnimation(animationName) {
-      if (!activeModelEl) return;
+      if (!activeModelEl) {
+        return;
+      }
 
       activeModelEl.setAttribute(
         'animation-mixer',
@@ -183,47 +324,90 @@
 
     AFRAME.registerComponent('marker-handler', {
       schema: {
-        audioId: { type: 'selector' },
-        controlsId: { type: 'selector' },
-        name: { type: 'string' }
+        audioId: {
+          type: 'selector'
+        },
+
+        controlsId: {
+          type: 'selector'
+        },
+
+        name: {
+          type: 'string'
+        }
       },
 
-      init: function () {
+      init: function() {
         const marker = this.el;
-        const modelEl = marker.querySelector('[gltf-model]');
-        const music = this.data.audioId;
-        const controls = this.data.controlsId;
 
-        marker.addEventListener('markerFound', () => {
-          activeMarkerEl = marker;
-          activeModelEl = modelEl;
-          activeMusic = music;
+        const modelEl =
+          marker.querySelector('[gltf-model]');
 
-          if (controls) {
-            showControls(controls, this.data.name);
+        const music =
+          this.data.audioId;
+
+        const controls =
+          this.data.controlsId;
+
+        marker.addEventListener(
+          'markerFound',
+          () => {
+
+            activeMarkerEl = marker;
+            activeModelEl = modelEl;
+            activeMusic = music;
+
+            if (controls) {
+              showControls(
+                controls,
+                this.data.name
+              );
+            }
+
+            document
+              .querySelectorAll('audio')
+              .forEach(function(audio) {
+
+                if (audio !== music) {
+                  audio.pause();
+                  audio.currentTime = 0;
+                }
+
+              });
+
+            if (music) {
+              music.play()
+                .catch(function(error) {
+                  console.log(
+                    'Audio play error:',
+                    error
+                  );
+                });
+            }
+
           }
+        );
 
-          if (music) {
-            music.play().catch(error => {
-              console.log('Audio play error:', error);
-            });
-          }
-        });
+        marker.addEventListener(
+          'markerLost',
+          () => {
 
-        marker.addEventListener('markerLost', () => {
-          if (activeMarkerEl === marker) {
-            activeMarkerEl = null;
-            activeModelEl = null;
-            activeMusic = null;
-            activeControls = null;
-            hideControls();
-          }
+            if (activeMarkerEl === marker) {
+              activeMarkerEl = null;
+              activeModelEl = null;
+              activeMusic = null;
+              activeControls = null;
 
-          if (music) {
-            music.pause();
-            music.currentTime = 0;
+              hideControls();
+            }
+
+            if (music) {
+              music.pause();
+              music.currentTime = 0;
+            }
+
           }
-        });
+        );
       }
     });
   </script>
