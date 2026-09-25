@@ -45,7 +45,7 @@
     }
 
     .glass-panel {
-      background: rgba(15, 23, 42, 0.82);
+      background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.18);
@@ -130,7 +130,7 @@
       </div>
 
       <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-        Scan target markers (<span class="text-cyan-400 font-mono font-semibold">Hiro</span> or <span class="text-indigo-400 font-mono font-semibold">Kanji</span>) once to spawn 3D models into AR space. Models stay locked in view even after moving away!
+        Scan target markers (<span class="text-cyan-400 font-mono font-semibold">Hiro</span> or <span class="text-indigo-400 font-mono font-semibold">Kanji</span>) to reveal a summon prompt. Confirm to anchor models into world space!
       </p>
 
       <div class="w-full grid grid-cols-2 gap-2 text-[11px] text-slate-300 pt-1">
@@ -144,13 +144,41 @@
           <svg class="w-4 h-4 mb-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
-          <span>Persistent AR Lock</span>
+          <span>Interactive Summon</span>
         </div>
       </div>
 
       <button id="start-btn" onclick="startApp()" class="w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm tracking-wider uppercase bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 active:scale-95 transition duration-200">
         Start Experience
       </button>
+    </div>
+  </div>
+
+  <div id="summon-modal" class="fixed inset-0 z-[10001] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+    <div class="glass-panel p-6 sm:p-7 rounded-3xl max-w-xs w-full text-center space-y-4 border border-cyan-500/40 shadow-2xl scale-95 transition-transform duration-300">
+      <div class="w-14 h-14 mx-auto bg-gradient-to-tr from-cyan-500/20 to-indigo-500/20 rounded-full flex items-center justify-center border border-cyan-400/30">
+        <svg class="w-7 h-7 text-cyan-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-bold text-white tracking-wide">Target Detected</h3>
+        <p id="summon-character-name" class="text-sm font-semibold text-cyan-400 mt-0.5">Character Name</p>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Would you like to summon this 3D model into your AR environment?
+      </p>
+
+      <div class="grid grid-cols-2 gap-3 pt-2">
+        <button onclick="declineSummon()" class="py-2.5 px-4 rounded-xl font-semibold text-xs text-slate-300 hover:text-white bg-slate-800/80 border border-slate-600 hover:border-slate-500 active:scale-95 transition">
+          Cancel
+        </button>
+        <button onclick="confirmSummon()" class="py-2.5 px-4 rounded-xl font-semibold text-xs text-white bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 shadow-lg shadow-cyan-500/30 active:scale-95 transition">
+          Summon
+        </button>
+      </div>
     </div>
   </div>
 
@@ -236,6 +264,7 @@
     let joystickManager = null;
     let appStarted = false;
     let currentMarkerHandler = null;
+    let pendingMarkerHandler = null;
 
     const moveData = { x: 0, y: 0 };
 
@@ -244,11 +273,13 @@
     const hudTop = document.getElementById('hud-top');
     const markerTitleText = document.getElementById('marker-title-text');
     const joystickZone = document.getElementById('joystick-zone');
+    const summonModal = document.getElementById('summon-modal');
+    const summonCharacterName = document.getElementById('summon-character-name');
 
     function forceMobileVideoResize() {
       const video = document.querySelector('.arjs-video');
       if (video) {
-        video.style.width = '100% ';
+        video.style.width = '100%';
         video.style.height = '100%';
         video.style.objectFit = 'cover';
         video.style.position = 'absolute';
@@ -367,6 +398,29 @@
       );
     }
 
+    function showSummonPrompt(handler) {
+      if (pendingMarkerHandler || (currentMarkerHandler && currentMarkerHandler.isLocked)) return;
+      pendingMarkerHandler = handler;
+      summonCharacterName.textContent = handler.data.name;
+      summonModal.style.display = 'flex';
+    }
+
+    function confirmSummon() {
+      summonModal.style.display = 'none';
+      if (pendingMarkerHandler) {
+        pendingMarkerHandler.spawnModel();
+        pendingMarkerHandler = null;
+      }
+    }
+
+    function declineSummon() {
+      summonModal.style.display = 'none';
+      if (pendingMarkerHandler) {
+        pendingMarkerHandler.declined = true;
+        pendingMarkerHandler = null;
+      }
+    }
+
     function repositionCurrentModel() {
       if (!currentMarkerHandler) return;
       currentMarkerHandler.resetLock();
@@ -388,16 +442,31 @@
         const worldContainer = document.getElementById('world-container');
 
         this.isLocked = false;
+        this.declined = false;
         this.originalParent = marker;
 
         marker.addEventListener('markerFound', () => {
           if (!appStarted) return;
 
-          if (!this.isLocked && modelEl) {
-            modelEl.object3D.updateMatrixWorld(true);
-            worldContainer.object3D.attach(modelEl.object3D);
-            this.isLocked = true;
+          if (this.isLocked) return;
+
+          if (this.declined) return;
+
+          showSummonPrompt(this);
+        });
+
+        marker.addEventListener('markerLost', () => {
+          if (!this.isLocked) {
+            this.declined = false;
           }
+        });
+
+        this.spawnModel = function () {
+          if (!modelEl) return;
+
+          modelEl.object3D.updateMatrixWorld(true);
+          worldContainer.object3D.attach(modelEl.object3D);
+          this.isLocked = true;
 
           activeMarkerEl = marker;
           activeModelEl = modelEl;
@@ -413,7 +482,7 @@
               console.log('Audio playback blocked:', error);
             });
           }
-        });
+        };
 
         this.resetLock = function () {
           if (!modelEl) return;
@@ -422,6 +491,7 @@
           modelEl.setAttribute('position', '0 0 0');
           modelEl.setAttribute('rotation', '0 0 0');
           this.isLocked = false;
+          this.declined = false;
 
           if (music) {
             music.pause();
