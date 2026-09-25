@@ -5,19 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Multi-Marker AR Animation Controller (Persistent Models)</title>
   
-  <!-- A-Frame and AR.js Libraries -->
   <script src="https://aframe.io/releases/1.8.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
   
-  <!-- NippleJS for Virtual Joystick -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
 
-  <!-- Tailwind CSS for UI components -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* Reset layout to full mobile viewport height/width and prevent dynamic browser address bar scroll/bounce */
     html, body {
       margin: 0;
       padding: 0;
@@ -35,7 +31,6 @@
       background-color: #000000;
     }
 
-    /* Force AR.js video and A-Frame Canvas to perfectly fit mobile screen without stretching or overflow bars */
     video, .arjs-video, a-scene, canvas.a-canvas {
       width: 100% !important;
       height: 100% !important;
@@ -49,7 +44,6 @@
       object-fit: cover !important;
     }
 
-    /* Glassmorphism styling for floating HUD components */
     .glass-panel {
       background: rgba(15, 23, 42, 0.82);
       backdrop-filter: blur(16px);
@@ -85,7 +79,6 @@
       transition: transform 0.6s;
     }
 
-    /* Joystick Zone Styling with iPhone Notch/Safe Area handling */
     #joystick-zone {
       position: fixed;
       bottom: calc(20px + env(safe-area-inset-bottom));
@@ -98,7 +91,6 @@
       touch-action: none;
     }
 
-    /* Video opacity transition to prevent camera white flashes */
     .arjs-video {
       opacity: 0;
       transition: opacity 0.4s ease-in-out;
@@ -108,7 +100,6 @@
       opacity: 1;
     }
 
-    /* Responsive adjustments for top and bottom floating UI elements */
     #hud-top {
       top: calc(16px + env(safe-area-inset-top));
     }
@@ -120,7 +111,6 @@
 </head>
 
 <body>
-  <!-- Start Menu / Splash Overlay -->
   <div id="start-menu" class="fixed inset-0 z-[10000] flex flex-col items-center justify-center p-4 bg-slate-950/95 text-white transition-opacity duration-500 overflow-y-auto">
     <div class="absolute w-72 h-72 bg-cyan-500/20 rounded-full blur-3xl -top-10 -left-10 pointer-events-none"></div>
     <div class="absolute w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl -bottom-10 -right-10 pointer-events-none"></div>
@@ -164,14 +154,12 @@
     </div>
   </div>
 
-  <!-- Top Marker Status HUD -->
   <div id="hud-top" class="fixed left-1/2 -translate-x-1/2 z-[9999] hidden flex-col items-center space-y-2 pointer-events-auto w-auto max-w-[90vw]">
     <div id="marker-name" class="px-4 py-1.5 glass-panel rounded-full text-white font-semibold text-[11px] sm:text-xs tracking-wider uppercase shadow-xl border border-cyan-500/30 flex items-center gap-2">
       <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
       <span id="marker-title-text">Model Active</span>
     </div>
     
-    <!-- Rescan / Unlock Button -->
     <button onclick="repositionCurrentModel()" class="px-3 py-1.5 glass-panel rounded-lg text-[11px] font-medium text-slate-200 hover:text-white border border-slate-600/50 hover:border-cyan-400/60 shadow transition-all active:scale-95 flex items-center gap-1.5">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -180,7 +168,6 @@
     </button>
   </div>
 
-  <!-- Animation Controls HUD -->
   <div id="animation-controls" class="fixed left-1/2 -translate-x-1/2 z-[9999] hidden flex-col items-center pointer-events-auto max-w-[90vw]">
     <div id="tts-controls" class="marker-controls flex gap-1.5 sm:gap-2 glass-panel p-1.5 sm:p-2 rounded-2xl border border-cyan-500/20">
       <button class="anim-btn px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-800/80 hover:bg-cyan-600 text-white font-semibold text-[11px] sm:text-xs rounded-xl border border-slate-600 hover:border-cyan-400 shadow" onclick="triggerAnimation('Running')">Idle</button>
@@ -195,10 +182,8 @@
     </div>
   </div>
 
-  <!-- Joystick Container -->
   <div id="joystick-zone"></div>
 
-  <!-- A-Frame AR Scene configured for mobile browsers -->
   <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;" class="w-full h-full">
     <a-assets>
       <a-asset-item id="tts-model" src="assets/tts.glb"></a-asset-item>
@@ -208,10 +193,8 @@
       <audio id="freddy-music" src="assets/freddy-theme.mp3" preload="auto" loop></audio>
     </a-assets>
 
-    <!-- World Container Entity for holding locked models in persistent space -->
     <a-entity id="world-container"></a-entity>
 
-    <!-- Hiro Marker -->
     <a-marker
       type="pattern"
       preset="hiro"
@@ -227,7 +210,6 @@
       </a-entity>
     </a-marker>
 
-    <!-- Kanji Marker -->
     <a-marker
       type="pattern"
       preset="kanji"
@@ -255,7 +237,6 @@
     let appStarted = false;
     let currentMarkerHandler = null;
 
-    // Movement state object
     const moveData = { x: 0, y: 0 };
 
     const startMenu = document.getElementById('start-menu');
@@ -264,7 +245,6 @@
     const markerTitleText = document.getElementById('marker-title-text');
     const joystickZone = document.getElementById('joystick-zone');
 
-    // Force camera & video resize fit for mobile browsers
     function forceMobileVideoResize() {
       const video = document.querySelector('.arjs-video');
       if (video) {
@@ -282,7 +262,6 @@
       }
     }
 
-    // Attach resize listeners for viewport or orientation changes
     window.addEventListener('resize', forceMobileVideoResize);
     window.addEventListener('orientationchange', () => {
       setTimeout(forceMobileVideoResize, 300);
@@ -312,7 +291,6 @@
       }, 500);
     }
 
-    // Movement component using local space transform updates
     AFRAME.registerComponent('model-controller', {
       schema: { speed: { type: 'number', default: 0.05 } },
       
@@ -389,7 +367,6 @@
       );
     }
 
-    // Function to unlock active model so it can be re-scanned/re-pinned
     function repositionCurrentModel() {
       if (!currentMarkerHandler) return;
       currentMarkerHandler.resetLock();
@@ -416,7 +393,6 @@
         marker.addEventListener('markerFound', () => {
           if (!appStarted) return;
 
-          // Perform initial lock/pinning when detected for the first time
           if (!this.isLocked && modelEl) {
             modelEl.object3D.updateMatrixWorld(true);
             worldContainer.object3D.attach(modelEl.object3D);
@@ -463,7 +439,6 @@
       }
     });
 
-    // Ensure camera and layout fits on DOM content loaded
     document.addEventListener('DOMContentLoaded', () => {
       setTimeout(forceMobileVideoResize, 1000);
     });
